@@ -5,6 +5,8 @@
 
 #include <opencv2/opencv.hpp>
 
+// Utility functions
+
 void show_image(cv::Mat image, std::string const& title) {
     cv::imshow(title, image);
     int key = 0;
@@ -32,6 +34,7 @@ cv::Mat plane(cv::Mat image, int index) {
     return planes[index];
 }
 
+
 struct ExtractArteries {
     ExtractArteries(bool show)
     :
@@ -58,9 +61,7 @@ struct ExtractArteries {
     cv::Mat clahe(cv::Mat image, int channel_index = 0) {
         cv::Mat result;
         cv::Mat channel;
-        std::cout << "clahe" << std::endl;
         cv::extractChannel(image, channel, channel_index);
-        std::cout << "channel.size()=" << channel.size() << std::endl;
         clahe_->apply(channel, result);
         return result;
     }
@@ -68,9 +69,6 @@ struct ExtractArteries {
     cv::Mat color_filter(cv::Mat test_image) {
         cv::Mat lab;
         cv::cvtColor(test_image, lab, cv::COLOR_BGR2Lab);
-        // show_image( plane(lab,0), "L");
-        // show_image( plane(lab,1), "a");
-        // show_image( plane(lab,2), "b");
         return plane(lab,0);
     }
 
@@ -92,22 +90,23 @@ struct ExtractArteries {
         test_image.copyTo(close);
 
         for (auto const& se : structuringElements_) {
-            std::cout << "open with se.size()=" << se.size() << std::endl;
             open = erosion(close, se);
             close = dilation(open, se);
         }
 
-        cv::Mat f4;
-        cv::subtract(close, test_image, f4);
-        auto f5 = clahe(f4);
-        //show_image(f5, "large_arteries");
-        return f5;
+        // show_image(close, "large_arteries(): close");
+        cv::Mat background_removed;
+        cv::subtract(close, test_image, background_removed);
+        // show_image(background_removed, "large_arteries(): background_removed");
+        return clahe(background_removed);
     }
 
 
     cv::Mat extract(cv::Mat test_image) {
         auto large_arteries_img = large_arteries( color_filter(test_image) );
-        show_image(large_arteries_img, "extract");
+        if (show()) {
+            show_image(large_arteries_img, "extract(): large_arteries_img");
+        }
         return large_arteries_img;
     }
 
@@ -122,8 +121,6 @@ protected:
 int main(int argc, char* argv[]) {
     auto ex = ExtractArteries(true);
     auto input_img = cv::imread("../drive/DRIVE/test/images/01_test.png");
-    // std::cout << "input.size()=" << input_img.size() << std::endl;
-    // std::cout << input_img.size() << std::endl;
     ex.extract(input_img);
 
     return 0;
