@@ -38,15 +38,6 @@ cv::Mat plane(cv::Mat image, int index) {
     return planes[index];
 }
 
-// float mean(cv::Mat image) {
-//     std::vector<cv::Mat> planes;
-//     cv::split(image, planes);
-//     cv::Mat mean_img3;
-//         if (img.channels() == 3) {
-//             mean_img3 = (planes[0] + planes[1] + planes[2]) / 3.0;
-//         }
-// }
-
 
 struct ExtractArteries {
     ExtractArteries(bool show)
@@ -137,10 +128,7 @@ struct ExtractArteries {
             show_image(large_arteries_img, "extract(): large_arteries_img");
         }
         auto cleaned_img = threshold(large_arteries_img);
-        if (show()) {
-            show_image(cleaned_img, "extract(): cleaned_img");
-        }
-        return large_arteries_img;
+        return cleaned_img;
     }
 
 
@@ -204,11 +192,6 @@ int main(int argc, char* argv[]) {
     for (int i=1; i<argc; i+=2) {
         process_image(program_name, ex, argv[i], argv[i+1]);
     }
-
-
-   
-    // auto input_img = cv::imread("../drive/DRIVE/test/images/01_test.png");
-    // ex.extract(input_img);
 
     return 0;
 }
