@@ -73,7 +73,12 @@ struct ExtractArteries {
     cv::Mat color_filter(cv::Mat test_image) {
         cv::Mat lab;
         cv::cvtColor(test_image, lab, cv::COLOR_BGR2Lab);
-        return plane(lab,0);
+        auto luminance = plane(lab,0);
+        cv::Mat equalized;
+        clahe_->apply(luminance, equalized);
+        cv::Mat result;
+        cv::merge(std::vector<cv::Mat>{equalized, equalized, equalized}, result);
+        return result;
     }
 
     cv::Mat erosion(cv::Mat image, cv::Mat se, int iterations = 1) {
@@ -139,7 +144,10 @@ struct ExtractArteries {
         if (show()) {
             show_image(large_arteries_img, "extract(): large_arteries_img");
         }
-        auto threshold_img = threshold(large_arteries_img);
+        cv::Mat median_img;
+        cv::medianBlur(large_arteries_img, median_img, 3);
+
+        auto threshold_img = threshold(median_img);
         show_image(threshold_img, "threshold");
         auto cleaned_img = remove_blobs( threshold_img );
         show_image(cleaned_img, "cleaned");
