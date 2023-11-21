@@ -1,7 +1,11 @@
+/// vessel_segmentation.cpp by Jeff Benshetler, (c) 2023
+/// Purpose: Segment arteries from input image.
+
 #include <iostream>
 #include <vector>
 #include <tuple>
-#include <set>
+#include <sstream>
+#include <filesystem>
 
 #include <opencv2/opencv.hpp>
 
@@ -33,6 +37,15 @@ cv::Mat plane(cv::Mat image, int index) {
     cv::split(image, planes);
     return planes[index];
 }
+
+// float mean(cv::Mat image) {
+//     std::vector<cv::Mat> planes;
+//     cv::split(image, planes);
+//     cv::Mat mean_img3;
+//         if (img.channels() == 3) {
+//             mean_img3 = (planes[0] + planes[1] + planes[2]) / 3.0;
+//         }
+// }
 
 
 struct ExtractArteries {
@@ -94,11 +107,27 @@ struct ExtractArteries {
             close = dilation(open, se);
         }
 
-        // show_image(close, "large_arteries(): close");
         cv::Mat background_removed;
         cv::subtract(close, test_image, background_removed);
-        // show_image(background_removed, "large_arteries(): background_removed");
         return clahe(background_removed);
+    }
+
+    cv::Mat remove_blobs(cv::Mat image) {
+        cv::Mat result;
+        cv::medianBlur(image, result, 3);
+        return result;
+    }
+
+    cv::Mat threshold(cv::Mat image) {
+        cv::Mat result;
+        auto mean = cv::mean(image);
+        cv::Mat threshold_img;
+        cv::threshold(image, threshold_img, mean[0], 255, cv::THRESH_BINARY);
+        auto blobs_removed = remove_blobs(threshold_img);
+        if (show()) {
+            show_image(blobs_removed, "threshold(): blobs_removed");
+        }
+        return blobs_removed;
     }
 
 
@@ -106,6 +135,10 @@ struct ExtractArteries {
         auto large_arteries_img = large_arteries( color_filter(test_image) );
         if (show()) {
             show_image(large_arteries_img, "extract(): large_arteries_img");
+        }
+        auto cleaned_img = threshold(large_arteries_img);
+        if (show()) {
+            show_image(cleaned_img, "extract(): cleaned_img");
         }
         return large_arteries_img;
     }
@@ -118,10 +151,64 @@ protected:
 
 };
 
+void help(std::string const& program_name, std::string error_msg = "") {
+    std::cout << program_name << " [-h] [<input_img> <output_img>]*" << std::endl;
+    std::cout << "\t-h : print help\n";
+    std::cout << "\t-s : show images\n";
+    std::cout << "\t<input_img> input image that is read and processed.\n";
+    std::cout << "\t<output_img> path where output image is written\n";
+    if (error_msg.size()) {
+        std::cerr << error_msg << std::endl;
+    }
+    exit(-1);
+}
+
+
+void process_image(
+    std::string const& program_name, 
+    ExtractArteries& ex, 
+    std::string const& input_path, 
+    std::string const& output_path,
+    bool show = true
+    ) 
+{
+    if (!std::filesystem::exists(input_path)) {
+        std::ostringstream oss;
+        oss << input_path << " input does not exist";
+        help(program_name, oss.str());
+    }
+    auto input_img = cv::imread(input_path);
+    auto output_img = ex.extract(input_img);
+    if (show) show_image(output_img, "output_path");
+
+}
+
+
 int main(int argc, char* argv[]) {
+    std::string program_name(argv[0]);
+    if (argc==1) {
+        exit(0);
+    }
+    if (argc>1 && strcmp(argv[1],"-h")==0) {
+        help(program_name, "Help requested");
+    }
+
+    if ( (argc>2) &&  (argc % 2 == 0) ) {
+        std::ostringstream oss;
+        oss << "Wrong number of arguments, argc=" << argc; 
+        help(program_name, oss.str() );
+    }
+
     auto ex = ExtractArteries(true);
-    auto input_img = cv::imread("../drive/DRIVE/test/images/01_test.png");
-    ex.extract(input_img);
+
+    for (int i=1; i<argc; i+=2) {
+        process_image(program_name, ex, argv[i], argv[i+1]);
+    }
+
+
+   
+    // auto input_img = cv::imread("../drive/DRIVE/test/images/01_test.png");
+    // ex.extract(input_img);
 
     return 0;
 }
