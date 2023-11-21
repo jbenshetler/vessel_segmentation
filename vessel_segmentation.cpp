@@ -122,7 +122,7 @@ struct ExtractArteries {
 
         std::vector< cv::Mat > contours;
         cv::findContours( binary_image, contours, cv::RETR_TREE, cv::CHAIN_APPROX_SIMPLE);
-        double const min_valid_area = 175.0;
+        double const min_valid_area = 25.0;
         for (auto const& cnt : contours) {
             auto area = cv::contourArea(cnt);
             if (area < min_valid_area) {
@@ -145,7 +145,8 @@ struct ExtractArteries {
         show_image(threshold_img, "threshold");
         auto cleaned_img = remove_blobs( threshold_img );
         show_image(cleaned_img, "cleaned");
-        return cleaned_img;
+        cv::medianBlur(cleaned_img, median_img, 3);
+        return median_img;
     }
 
 
