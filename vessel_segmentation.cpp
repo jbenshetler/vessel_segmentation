@@ -108,12 +108,6 @@ struct ExtractArteries {
         return clahe(background_removed);
     }
 
-    // cv::Mat remove_blobs(cv::Mat image) {
-    //     cv::Mat result;
-    //     cv::medianBlur(image, result, 3);
-    //     return result;
-    // }
-
     cv::Mat threshold(cv::Mat image) {
         cv::Mat result;
         auto mean = cv::mean(image);
@@ -128,7 +122,7 @@ struct ExtractArteries {
 
         std::vector< cv::Mat > contours;
         cv::findContours( binary_image, contours, cv::RETR_TREE, cv::CHAIN_APPROX_SIMPLE);
-        double const min_valid_area = 25.0;
+        double const min_valid_area = 175.0;
         for (auto const& cnt : contours) {
             auto area = cv::contourArea(cnt);
             if (area < min_valid_area) {
@@ -189,7 +183,9 @@ void process_image(
         help(program_name, oss.str());
     }
     auto input_img = cv::imread(input_path);
-    auto output_img = ex.extract(input_img);
+    cv::Mat bgr_img;
+    cv::cvtColor(input_img, bgr_img, cv::COLOR_RGB2BGR);
+    auto output_img = ex.extract(bgr_img);
     if (show) show_image(output_img, "output_path");
 
 }
