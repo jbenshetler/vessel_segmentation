@@ -103,22 +103,34 @@ struct ExtractArteries {
         return clahe(background_removed);
     }
 
-    cv::Mat remove_blobs(cv::Mat image) {
-        cv::Mat result;
-        cv::medianBlur(image, result, 3);
-        return result;
-    }
+    // cv::Mat remove_blobs(cv::Mat image) {
+    //     cv::Mat result;
+    //     cv::medianBlur(image, result, 3);
+    //     return result;
+    // }
 
     cv::Mat threshold(cv::Mat image) {
         cv::Mat result;
         auto mean = cv::mean(image);
         cv::Mat threshold_img;
         cv::threshold(image, threshold_img, mean[0], 255, cv::THRESH_BINARY);
-        auto blobs_removed = remove_blobs(threshold_img);
-        if (show()) {
-            show_image(blobs_removed, "threshold(): blobs_removed");
+        return threshold_img;
+    }
+
+    cv::Mat remove_blobs(cv::Mat binary_image) {
+        cv::Mat result;
+        binary_image.copyTo(result);
+
+        std::vector< cv::Mat > contours;
+        cv::findContours( binary_image, contours, cv::RETR_TREE, cv::CHAIN_APPROX_SIMPLE);
+        double const min_valid_area = 25.0;
+        for (auto const& cnt : contours) {
+            auto area = cv::contourArea(cnt);
+            if (area < min_valid_area) {
+                cv::drawContours(result, cnt, -1, cv::Scalar(0), -1);
+            }
         }
-        return blobs_removed;
+        return result;
     }
 
 
@@ -127,7 +139,10 @@ struct ExtractArteries {
         if (show()) {
             show_image(large_arteries_img, "extract(): large_arteries_img");
         }
-        auto cleaned_img = threshold(large_arteries_img);
+        auto threshold_img = threshold(large_arteries_img);
+        show_image(threshold_img, "threshold");
+        auto cleaned_img = remove_blobs( threshold_img );
+        show_image(cleaned_img, "cleaned");
         return cleaned_img;
     }
 
