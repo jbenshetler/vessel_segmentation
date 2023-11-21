@@ -15,6 +15,23 @@ void show_image(cv::Mat image, std::string const& title) {
     cv::destroyWindow(title);
 }
 
+cv::Mat imread_rgb(std::string const& filename) {
+    cv::Mat bgr = cv::imread(filename);
+    cv::Mat result;
+    cv::cvtColor(bgr, result, cv::COLOR_RGB2BGR);
+    return result;
+}
+
+void print_info(std::string const& str, cv::Mat image) {
+    std::cout << str << " " << image.size() << " " << image.channels() << std::endl;
+}
+
+cv::Mat plane(cv::Mat image, int index) {
+    std::vector<cv::Mat> planes;
+    cv::split(image, planes);
+    return planes[index];
+}
+
 struct ExtractArteries {
     ExtractArteries(bool show)
     :
@@ -51,9 +68,10 @@ struct ExtractArteries {
     cv::Mat color_filter(cv::Mat test_image) {
         cv::Mat lab;
         cv::cvtColor(test_image, lab, cv::COLOR_BGR2Lab);
-        std::vector<cv::Mat> planes;
-        cv::split(lab, planes);
-        return planes[1];
+        // show_image( plane(lab,0), "L");
+        // show_image( plane(lab,1), "a");
+        // show_image( plane(lab,2), "b");
+        return plane(lab,0);
     }
 
     cv::Mat erosion(cv::Mat image, cv::Mat se, int iterations = 1) {
@@ -74,18 +92,24 @@ struct ExtractArteries {
         test_image.copyTo(close);
 
         for (auto const& se : structuringElements_) {
+            std::cout << "open with se.size()=" << se.size() << std::endl;
             open = erosion(close, se);
             close = dilation(open, se);
         }
 
         cv::Mat f4;
         cv::subtract(close, test_image, f4);
-        cv::Mat f5;
-        f5 = clahe(f4);
+        auto f5 = clahe(f4);
+        //show_image(f5, "large_arteries");
         return f5;
     }
 
 
+    cv::Mat extract(cv::Mat test_image) {
+        auto large_arteries_img = large_arteries( color_filter(test_image) );
+        show_image(large_arteries_img, "extract");
+        return large_arteries_img;
+    }
 
 
 protected:
@@ -98,11 +122,9 @@ protected:
 int main(int argc, char* argv[]) {
     auto ex = ExtractArteries(true);
     auto input_img = cv::imread("../drive/DRIVE/test/images/01_test.png");
-    std::cout << input_img.size() << std::endl;
-    cv::imwrite("../output/output.png", input_img);
-    auto clahe = ex.clahe(input_img);
-    std::cout << "clahe.size()=" << clahe.size() << std::endl;
-    show_image(ex.clahe(input_img), "clahe" );
+    // std::cout << "input.size()=" << input_img.size() << std::endl;
+    // std::cout << input_img.size() << std::endl;
+    ex.extract(input_img);
 
     return 0;
 }
