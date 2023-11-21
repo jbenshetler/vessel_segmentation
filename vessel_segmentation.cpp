@@ -166,11 +166,10 @@ void help(std::string const& program_name, std::string error_msg = "") {
     if (error_msg.size()) {
         std::cerr << error_msg << std::endl;
     }
-    exit(-1);
 }
 
 
-void process_image(
+bool process_image(
     std::string const& program_name, 
     ExtractArteries& ex, 
     std::string const& input_path, 
@@ -178,39 +177,51 @@ void process_image(
     bool show = true
     ) 
 {
+    bool success = true;
     if (!std::filesystem::exists(input_path)) {
         std::ostringstream oss;
         oss << input_path << " input does not exist";
         help(program_name, oss.str());
+        success = false;
+    } else {
+        auto input_img = cv::imread(input_path);
+        cv::Mat bgr_img;
+        cv::cvtColor(input_img, bgr_img, cv::COLOR_RGB2BGR);
+        auto output_img = ex.extract(bgr_img);
+        if (show) show_image(output_img, "output_path");
+        cv::imwrite(output_path, output_img);
+        if (!std::filesystem::exists(output_path)) {
+            std::ostringstream oss;
+            std::cerr << "Error: Failed to write " << output_path;
+            success = false;
+        }
     }
-    auto input_img = cv::imread(input_path);
-    cv::Mat bgr_img;
-    cv::cvtColor(input_img, bgr_img, cv::COLOR_RGB2BGR);
-    auto output_img = ex.extract(bgr_img);
-    if (show) show_image(output_img, "output_path");
-
+    return success;
 }
 
 
 int main(int argc, char* argv[]) {
+    int result = 0;
     std::string program_name(argv[0]);
     if (argc==1) {
-        exit(0);
-    }
-    if (argc>1 && strcmp(argv[1],"-h")==0) {
+        // NOP
+    } else if (argc>1 && strcmp(argv[1],"-h")==0) {
         help(program_name, "Help requested");
-    }
-
-    if ( (argc>2) &&  (argc % 2 == 0) ) {
+    } else if ( (argc>2) &&  (argc % 2 == 0) ) {
         std::ostringstream oss;
         oss << "Wrong number of arguments, argc=" << argc; 
         help(program_name, oss.str() );
-    }
+        exit(-1);
+    } else {
 
-    auto ex = ExtractArteries(true);
+        auto ex = ExtractArteries(true);
 
-    for (int i=1; i<argc; i+=2) {
-        process_image(program_name, ex, argv[i], argv[i+1]);
+        for (int i=1; i<argc; i+=2) {
+            result = process_image(program_name, ex, argv[i], argv[i+1]);
+            if (result != 0) {
+                break;
+            }
+        }
     }
 
     return 0;
