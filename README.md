@@ -58,16 +58,16 @@ Yields the following images (truncated to the first 8):
 
 ![01](./output/01.png "drive/DRIVE/test/images/01_test.tif")  
 
-![02](./output/01.png "drive/DRIVE/test/images/02_test.tif")  
+![02](./output/02.png "drive/DRIVE/test/images/02_test.tif")  
 
-![03](./output/01.png "drive/DRIVE/test/images/03_test.tif")  
+![03](./output/03.png "drive/DRIVE/test/images/03_test.tif")  
 
-![04](./output/01.png "drive/DRIVE/test/images/04_test.tif")  
+![04](./output/04.png "drive/DRIVE/test/images/04_test.tif")  
 
-![05](./output/01.png "drive/DRIVE/test/images/05_test.tif")  
+![05](./output/05.png "drive/DRIVE/test/images/05_test.tif")  
 
-![06](./output/01.png "drive/DRIVE/test/images/06_test.tif")  
+![06](./output/06.png "drive/DRIVE/test/images/06_test.tif")  
 
-![07](./output/01.png "drive/DRIVE/test/images/07_test.tif")  
+![07](./output/07.png "drive/DRIVE/test/images/07_test.tif")  
 
-![08](./output/01.png "drive/DRIVE/test/images/08_test.tif")  
+![08](./output/08.png "drive/DRIVE/test/images/08_test.tif")  
