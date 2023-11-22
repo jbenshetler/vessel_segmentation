@@ -10,6 +10,6 @@ project(vessel_segmentation)
 
 find_package(OpenCV 4.8 REQUIRED)
 include_directories( ${OpenCV_INCLUDE_DIRS} )
-add_executable ( vessel_segmentation vessel_segmentation.cpp )
+add_executable ( vessel_segmentation ./cpp/vessel_segmentation.cpp )
 target_link_libraries ( vessel_segmentation ${SimpleITK_LIBRARIES} )
 target_link_libraries( vessel_segmentation ${OpenCV_LIBS} )
