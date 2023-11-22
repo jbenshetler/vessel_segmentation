@@ -237,8 +237,15 @@ bool process_image(
         cv::Mat bgr_img;
         cv::cvtColor(input_img, bgr_img, cv::COLOR_RGB2BGR);
         auto output_img = ex.extract(bgr_img);
+        // create 2-up composite to show result
+        cv::Mat output_color;
+        cv::cvtColor(output_img, output_color, cv::COLOR_GRAY2RGB);
+        cv::Mat twoup;
+        print_info("input_img", input_img);
+        print_info("output_img", output_color);
+        cv::hconcat(input_img, output_color, twoup);
         if (ex.show()) show_image(output_img, "output_path");
-        cv::imwrite(output_path, output_img);
+        cv::imwrite(output_path, twoup);
         if (!std::filesystem::exists(output_path)) {
             std::ostringstream oss;
             std::cerr << "Error: Failed to write " << output_path;
