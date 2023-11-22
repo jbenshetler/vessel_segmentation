@@ -1,6 +1,9 @@
 # Vessel Segmentation
 
 Perform vessel segmentation using OpenCV with C++ as a capabilities demonstration. 
+
+Implementation is based on [Contour Based Blood Vessel Segmentation in Digital Fundus Images](https://github.com/sachinmb27/Contour-Based-Blood-Vessel-Segmentation-in-Retinal-Fundus-Images/blob/main/CBBVS%20Documentation.pdf).  
+
 The application, `vessel_segmentation`, accepts zero or more input images along with corresponding output image names in pairs, e.g.:  
 `vessel_segmentation input1.tif output1.tif input2.tif output2.tif`
 

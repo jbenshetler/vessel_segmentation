@@ -47,6 +47,7 @@ cv::Mat plane(cv::Mat image, int index) {
 struct ExtractArteries {
     /// @brief Construct structuring elements and adaptive contrast enhancement data structures
     /// @param show Whether to incrementally show image as it is processed
+    /// @note Based on [Contour Based Blood Vessel Segmentation in Retinal Fundus Images](https://github.com/sachinmb27/Contour-Based-Blood-Vessel-Segmentation-in-Retinal-Fundus-Images/blob/main/segmentation.py)
     ExtractArteries(bool show)
     :
     show_{show}
