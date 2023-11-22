@@ -241,8 +241,6 @@ bool process_image(
         cv::Mat output_color;
         cv::cvtColor(output_img, output_color, cv::COLOR_GRAY2RGB);
         cv::Mat twoup;
-        print_info("input_img", input_img);
-        print_info("output_img", output_color);
         cv::hconcat(input_img, output_color, twoup);
         if (ex.show()) show_image(output_img, "output_path");
         cv::imwrite(output_path, twoup);
@@ -278,9 +276,6 @@ std::tuple< Options, std::vector<std::string>, int, std::string> parse_args(int 
             image_files.push_back( arg );
         }
     }
-
-    std::copy( image_files.begin(), image_files.end(), std::ostream_iterator<std::string>(std::cout, ", ") );
-    if (!image_files.empty()) std::cout << "\n";
 
     if (image_files.size() % 2 == 1) {
         std::ostringstream oss;
