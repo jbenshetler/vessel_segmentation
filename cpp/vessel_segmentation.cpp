@@ -144,7 +144,7 @@ struct ExtractArteries {
         cv::Mat result;
         auto mean = cv::mean(image);
         cv::Mat threshold_img;
-        cv::threshold(image, threshold_img, mean[0], 255, cv::THRESH_BINARY);
+        cv::threshold(image, threshold_img, mean[0], 255, cv::THRESH_BINARY | cv::THRESH_OTSU) ;
         return threshold_img;
     }
 
