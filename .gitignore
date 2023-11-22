@@ -1,2 +1,4 @@
 vessel_segmentation_env/**
 build/**
+settings.json
+tasks.json
