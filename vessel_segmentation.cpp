@@ -6,7 +6,9 @@
 #include <tuple>
 #include <sstream>
 #include <filesystem>
-
+#include <tuple>
+#include <set>
+#include <algorithm>
 #include <opencv2/opencv.hpp>
 
 // Utility functions
@@ -135,16 +137,14 @@ struct ExtractArteries {
 
     cv::Mat extract(cv::Mat test_image) {
         auto large_arteries_img = large_arteries( color_filter(test_image) );
-        if (show()) {
-            show_image(large_arteries_img, "extract(): large_arteries_img");
-        }
+        if (show()) show_image(large_arteries_img, "extract(): large_arteries_img");
         cv::Mat median_img;
         cv::medianBlur(large_arteries_img, median_img, 3);
 
         auto threshold_img = threshold(median_img);
-        show_image(threshold_img, "threshold");
+        if (show()) show_image(threshold_img, "extract(): threshold");
         auto cleaned_img = remove_blobs( threshold_img );
-        show_image(cleaned_img, "cleaned");
+        if (show()) show_image(cleaned_img, "extract(): cleaned");
         cv::medianBlur(cleaned_img, median_img, 3);
         return median_img;
     }
@@ -157,8 +157,16 @@ protected:
 
 };
 
+
+
+enum class Flag { show, help};
+
+using Options = std::set<Flag>;
+
+
+
 void help(std::string const& program_name, std::string error_msg = "") {
-    std::cout << program_name << " [-h] [<input_img> <output_img>]*" << std::endl;
+    std::cout << program_name << " [-h] [-s] [<input_img> <output_img>]*" << std::endl;
     std::cout << "\t-h : print help\n";
     std::cout << "\t-s : show images\n";
     std::cout << "\t<input_img> input image that is read and processed.\n";
@@ -173,8 +181,7 @@ bool process_image(
     std::string const& program_name, 
     ExtractArteries& ex, 
     std::string const& input_path, 
-    std::string const& output_path,
-    bool show = true
+    std::string const& output_path
     ) 
 {
     bool success = true;
@@ -188,7 +195,7 @@ bool process_image(
         cv::Mat bgr_img;
         cv::cvtColor(input_img, bgr_img, cv::COLOR_RGB2BGR);
         auto output_img = ex.extract(bgr_img);
-        if (show) show_image(output_img, "output_path");
+        if (ex.show()) show_image(output_img, "output_path");
         cv::imwrite(output_path, output_img);
         if (!std::filesystem::exists(output_path)) {
             std::ostringstream oss;
@@ -200,29 +207,57 @@ bool process_image(
 }
 
 
-int main(int argc, char* argv[]) {
+
+std::tuple< Options, std::vector<std::string>, int, std::string> parse_args(int const argc, char* argv[]) {
     int result = 0;
+    Options options;
+
     std::string program_name(argv[0]);
-    if (argc==1) {
-        // NOP
-    } else if (argc>1 && strcmp(argv[1],"-h")==0) {
-        help(program_name, "Help requested");
-    } else if ( (argc>2) &&  (argc % 2 == 0) ) {
+    std::vector<std::string> image_files;
+
+    std::vector< std::pair< std::string, std::string > > input_output;
+    for (int i=1; i<argc; i++) {
+        std::string arg( argv[i] );
+        if ( arg == "-h") {
+            options.insert(Flag::help);
+        } else if ( arg == "-s" ) {
+            options.insert(Flag::show);
+        } else {
+            image_files.push_back( arg );
+        }
+    }
+
+    std::copy( image_files.begin(), image_files.end(), std::ostream_iterator<std::string>(std::cout, ", ") );
+    std::cout << "\n";
+
+    if (image_files.size() % 2 == 1) {
         std::ostringstream oss;
         oss << "Wrong number of arguments, argc=" << argc; 
         help(program_name, oss.str() );
-        exit(-1);
-    } else {
+        result = -1;
+    } 
 
-        auto ex = ExtractArteries(true);
+    return std::make_tuple(options, image_files, result, program_name);
+}
 
-        for (int i=1; i<argc; i+=2) {
-            result = process_image(program_name, ex, argv[i], argv[i+1]);
+
+int main(int argc, char* argv[]) {
+    auto [options, image_files, result, program_name] = parse_args(argc, argv);
+    
+    if ( options.contains(Flag::help) ) {
+        help(program_name);
+    }
+
+    if (result==0) {
+        auto ex = ExtractArteries( options.contains(Flag::show) );
+
+        for (int i=0; i<image_files.size(); i+=2) {
+            result = process_image(program_name, ex, image_files.at(i), image_files.at(i+1) );
             if (result != 0) {
                 break;
             }
         }
     }
 
-    return 0;
+    return result;
 }
