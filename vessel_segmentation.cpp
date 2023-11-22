@@ -11,6 +11,7 @@
 #include <algorithm>
 #include <opencv2/opencv.hpp>
 
+/////////////////////////
 // Utility functions
 
 void show_image(cv::Mat image, std::string const& title) {
@@ -41,7 +42,11 @@ cv::Mat plane(cv::Mat image, int index) {
 }
 
 
+/////////////////////////
+// Does the segmentation
 struct ExtractArteries {
+    /// @brief Construct structuring elements and adaptive contrast enhancement data structures
+    /// @param show Whether to incrementally show image as it is processed
     ExtractArteries(bool show)
     :
     show_{show}
@@ -64,6 +69,10 @@ struct ExtractArteries {
 
     bool show() const { return show_; }
 
+    /// @brief Perform adaptive contrast enhancement
+    /// @param image Source for contrast enhancement
+    /// @param channel_index Optional channel index for multi-channel images
+    /// @return Contrast enhanced image
     cv::Mat clahe(cv::Mat image, int channel_index = 0) {
         cv::Mat result;
         cv::Mat channel;
@@ -72,6 +81,9 @@ struct ExtractArteries {
         return result;
     }
 
+    /// @brief Perform contrast enhancement on luminance
+    /// @param test_image Source for filtering
+    /// @return Contrast-enhanced luminance image
     cv::Mat color_filter(cv::Mat test_image) {
         cv::Mat lab;
         cv::cvtColor(test_image, lab, cv::COLOR_BGR2Lab);
@@ -83,18 +95,32 @@ struct ExtractArteries {
         return result;
     }
 
+    /// @brief Morphological opening
+    /// @param image Source for morpho operation
+    /// @param se Structuring element
+    /// @param iterations How many times to perform operation
+    /// @return Opening result
     cv::Mat erosion(cv::Mat image, cv::Mat se, int iterations = 1) {
         cv::Mat result;
         cv::morphologyEx(image, result, cv::MORPH_OPEN, se, cv::Point(-1,-1), iterations);
         return result;
     }
 
+    /// @brief Morphological closing
+    /// @param image Source for morpho operation
+    /// @param se Structing element
+    /// @param iterations How many time to perform operation
+    /// @return Closing result
     cv::Mat dilation(cv::Mat image, cv::Mat se, int iterations = 1) {
         cv::Mat result;
         cv::morphologyEx(image, result, cv::MORPH_CLOSE, se, cv::Point(-1,-1), iterations);
         return result;
     }
 
+    /// @brief Extract the large arteries 
+    /// @param test_image Source for extraction
+    /// @return Grayscale image with everything other than larger arteries suppressed
+    /// @note "Large arteries" is a relative
     cv::Mat large_arteries(cv::Mat test_image) {
         cv::Mat close;
         cv::Mat open;
@@ -110,6 +136,9 @@ struct ExtractArteries {
         return clahe(background_removed);
     }
 
+    /// @brief Set everything below the image mean to black
+    /// @param image Source for threshold
+    /// @return Binary image with thresholding results
     cv::Mat threshold(cv::Mat image) {
         cv::Mat result;
         auto mean = cv::mean(image);
@@ -118,6 +147,9 @@ struct ExtractArteries {
         return threshold_img;
     }
 
+    /// @brief Remove blobs from image based on size
+    /// @param binary_image Source for suppression
+    /// @return Binary image with blobs suppressed
     cv::Mat remove_blobs(cv::Mat binary_image) {
         cv::Mat result;
         binary_image.copyTo(result);
@@ -135,6 +167,9 @@ struct ExtractArteries {
     }
 
 
+    /// @brief Primary interface to extract arteries from image
+    /// @param test_image BGR source image
+    /// @return Binary image with mask of large arteries
     cv::Mat extract(cv::Mat test_image) {
         auto large_arteries_img = large_arteries( color_filter(test_image) );
         if (show()) show_image(large_arteries_img, "extract(): large_arteries_img");
@@ -164,11 +199,13 @@ enum class Flag { show, help};
 using Options = std::set<Flag>;
 
 
-
+/// @brief Output help text
+/// @param program_name Included in output
+/// @param error_msg Optional message to include in output to STDERR
 void help(std::string const& program_name, std::string error_msg = "") {
     std::cout << program_name << " [-h] [-s] [<input_img> <output_img>]*" << std::endl;
     std::cout << "\t-h : print help\n";
-    std::cout << "\t-s : show images\n";
+    std::cout << "\t-s : show images. Press 'q', SPACE, or ESC to close window.\n";
     std::cout << "\t<input_img> input image that is read and processed.\n";
     std::cout << "\t<output_img> path where output image is written\n";
     if (error_msg.size()) {
@@ -176,7 +213,12 @@ void help(std::string const& program_name, std::string error_msg = "") {
     }
 }
 
-
+/// @brief Read image, extract arteries, and store resulting image to file
+/// @param program_name Used in error text
+/// @param ex Performs artery extraction
+/// @param input_path Input image path on disk
+/// @param output_put Output path on disk where to store image
+/// @return bool `true` if succeeded in processing, `false` otherwise
 bool process_image(
     std::string const& program_name, 
     ExtractArteries& ex, 
@@ -207,7 +249,10 @@ bool process_image(
 }
 
 
-
+/// @brief Parse command line arguments
+/// @param argc Number of command line arguments, including the program name
+/// @param argv Array of strings passed on the command line
+/// @returns Options passed as flags, input and output image file names in a `vector`, a shell return code, and the program name
 std::tuple< Options, std::vector<std::string>, int, std::string> parse_args(int const argc, char* argv[]) {
     int result = 0;
     Options options;
@@ -228,7 +273,7 @@ std::tuple< Options, std::vector<std::string>, int, std::string> parse_args(int 
     }
 
     std::copy( image_files.begin(), image_files.end(), std::ostream_iterator<std::string>(std::cout, ", ") );
-    std::cout << "\n";
+    if (!image_files.empty()) std::cout << "\n";
 
     if (image_files.size() % 2 == 1) {
         std::ostringstream oss;
